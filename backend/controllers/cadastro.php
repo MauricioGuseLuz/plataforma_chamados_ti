@@ -1,35 +1,57 @@
 <?php
-session_start();
-include '../../backend/includes/db.php';
+// Inclua o PHPMailer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
-$nome = $_POST['nome'];
-$data_nascimento = $_POST['data_nascimento'];
-$email = $_POST['email'];
-$telefone = $_POST['telefone'];
-$whatsapp = $_POST['whatsapp'];
-$senha = password_hash($_POST['senha'], PASSWORD_DEFAULT);
-$estado = $_POST['estado'];
-$cidade = $_POST['cidade'];
+require 'PHPMailer-master/src/Exception.php';
+require 'PHPMailer-master/src/PHPMailer.php';
+require 'PHPMailer-master/src/SMTP.php';
 
-// Verifica se o usuário tem mais de 18 anos
-$hoje = new DateTime();
-$nascimento = new DateTime($data_nascimento);
-$idade = $hoje->diff($nascimento)->y;
+// Conectar ao banco de dados (supondo que você já tenha isso)
+$conexao = new mysqli('localhost', 'usuario', 'senha', 'banco_de_dados');
 
-if ($idade < 18) {
-    die("Você deve ter mais de 18 anos para se cadastrar.");
+// Verificar conexão
+if ($conexao->connect_error) {
+    die("Erro de conexão: " . $conexao->connect_error);
 }
 
-// Verifica se o e-mail já está cadastrado
-$stmt = $pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
-$stmt->execute([$email]);
-if ($stmt->rowCount() > 0) {
-    die("Este e-mail já está cadastrado.");
+// Processar o formulário de cadastro
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $nome = $_POST['nome'];
+    $email = $_POST['email'];
+
+    // Inserir usuário no banco de dados (supondo que você já tenha isso)
+    $sql = "INSERT INTO usuarios (nome, email) VALUES ('$nome', '$email')";
+    if ($conexao->query($sql) === TRUE) {
+        // Enviar e-mail de boas-vindas
+        $mail = new PHPMailer(true);
+
+        try {
+            // Configurações do servidor SMTP
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'seuemail@gmail.com';
+            $mail->Password   = 'suasenha';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            // Remetente e destinatário
+            $mail->setFrom('seuemail@gmail.com', 'Nome do Sistema');
+            $mail->addAddress($email, $nome);
+
+            // Conteúdo do e-mail
+            $mail->isHTML(true);
+            $mail->Subject = 'Bem-vindo ao Nosso Sistema!';
+            $mail->Body    = "Olá $nome,<br><br>Obrigado por se cadastrar no nosso sistema!<br><br>Atenciosamente,<br>Equipe do Sistema";
+
+            // Envia o e-mail
+            $mail->send();
+            echo 'Cadastro realizado com sucesso! Um e-mail de boas-vindas foi enviado.';
+        } catch (Exception $e) {
+            echo "Erro ao enviar e-mail: {$mail->ErrorInfo}";
+        }
+    } else {
+        echo "Erro ao cadastrar usuário: " . $conexao->error;
+    }
 }
-
-// Insere o usuário no banco de dados
-$stmt = $pdo->prepare("INSERT INTO usuarios (nome_completo, data_nascimento, email, telefone, whatsapp, senha, estado, cidade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-$stmt->execute([$nome, $data_nascimento, $email, $telefone, $whatsapp, $senha, $estado, $cidade]);
-
-echo "Cadastro realizado com sucesso!";
-?>
