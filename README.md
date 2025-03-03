@@ -54,4 +54,4 @@ Este projeto é uma plataforma online para registro e acompanhamento de chamados
 
 1. **Clone o Repositório**:
    ```bash
-   git clone https://github.com/seu-usuario/chamados_ti.git
+   git clone https://github.com/seu-usuario/plataforma_chamados_ti.git
