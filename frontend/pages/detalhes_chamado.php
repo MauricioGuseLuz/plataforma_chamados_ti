@@ -1,13 +1,12 @@
 <?php
 session_start();
-error_reporting(E_ALL); // Exibe todos os erros
-ini_set('display_errors', 1); // Garante que os erros sejam exibidos
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 if (!isset($_SESSION['usuario_id'])) {
     die("Acesso negado. Faça login para continuar.");
 }
 
-// Verifica se o ID do chamado foi passado na URL
 if (!isset($_GET['id'])) {
     die("ID do chamado não especificado.");
 }
@@ -15,7 +14,7 @@ if (!isset($_GET['id'])) {
 $chamado_id = $_GET['id'];
 $usuario_id = $_SESSION['usuario_id'];
 
-include '../../backend/includes/db.php'; // Verifique esse caminho
+include '../../backend/includes/db.php';
 
 // Busca os detalhes do chamado
 $stmt = $pdo->prepare("SELECT id, descricao, tipo_incidente, data_abertura FROM chamados WHERE id = ? AND usuario_id = ?");
@@ -95,6 +94,19 @@ $historico = $stmt->fetchAll();
             <?php endif; ?>
         </div>
 
+        <!-- Formulário para adicionar novos anexos -->
+        <div class="mt-4">
+            <h4>Adicionar Novos Anexos</h4>
+            <form id="formNovoAnexo" enctype="multipart/form-data">
+                <input type="hidden" name="chamado_id" value="<?= $chamado['id'] ?>">
+                <div class="mb-3">
+                    <label for="novos_anexos" class="form-label">Selecione os arquivos</label>
+                    <input type="file" class="form-control" id="novos_anexos" name="novos_anexos[]" multiple required>
+                </div>
+                <button type="submit" class="btn btn-primary">Enviar Anexos</button>
+            </form>
+        </div>
+
         <!-- Contatos -->
         <div class="mt-4">
             <h4>Contatos</h4>
@@ -156,6 +168,27 @@ $historico = $stmt->fetchAll();
                     success: function(response) {
                         alert(response);
                         location.reload(); // Recarrega a página para exibir o novo histórico
+                    }
+                });
+            });
+
+            // Submissão do formulário de novos anexos
+            $('#formNovoAnexo').submit(function(e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+
+                $.ajax({
+                    url: '../../backend/controllers/adicionar_anexo.php',
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        alert(response);
+                        location.reload(); // Recarrega a página para exibir os novos anexos
+                    },
+                    error: function(xhr, status, error) {
+                        alert("Erro ao adicionar anexos: " + xhr.responseText);
                     }
                 });
             });
